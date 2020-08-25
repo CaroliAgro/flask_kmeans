@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>File Upload</title>
+    <link rel=stylesheet type=text/css href="{{ url_for('static',
+    filename='style.css') }}">
+  </head>
+  <body>
+    <h1>Escolha uma imagem de folha contaminada por praga</h1>
+    <form method="POST" action="" enctype="multipart/form-data">
+      <p><input type="file" name="file" /></p>
+      <p><input class="teste" type="submit" value="Submit" /></p>
+    </form>
+    <hr />
+    <img
+      src="{{ url_for('upload', filename=files) }}"
+      style="width: 300px; height: 120px;"
+    />
+    {% if tables and titles %}
+    <h1>Área predita com a doença: {{num3}} %</h1>
+    <h3>Informações do pixel avaliadas para predição</h3>
+    <h4>Exemplos</h4>
+    <table class="table table-striped">
+      <tbody>
+        <tr>
+          <th>{{titles[0]}}</th>
+          <th>{{titles[1]}}</th>
+          <th>{{titles[2]}}</th>
+          <th>{{titles[3]}}</th>
+          <th>{{titles[4]}}</th>
+          <th>{{titles[5]}}</th>
+          <th>{{titles[6]}}</th>
+        </tr>
+        {%for ctrrow in tables %}
+        <tr>
+          <td>{{ ctrrow['L'] }}</td>
+          <td>{{ ctrrow['A'] }}</td>
+          <td>{{ ctrrow['B'] }}</td>
+          <td>{{ ctrrow['x'] }}</td>
+          <td>{{ ctrrow['y'] }}</td>
+          <td>{{ ctrrow['Otsu'] }}</td>
+          <td>{{ ctrrow['predict'] }}</td>
+        </tr>
+        {%endfor%}
+      </tbody>
+    </table>
+    {% endif %}
+  </body>
+</html>
