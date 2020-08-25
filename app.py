@@ -5,10 +5,14 @@ import json
 from flask import Flask, render_template, request, redirect, url_for, abort, \
     send_from_directory
 from werkzeug.utils import secure_filename
-import cv2
+#import cv2
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
+from skimage.color import rgb2gray
+from skimage.color import rgb2lab
+from skimage.filters import threshold_otsu
+from skimage import io
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024
@@ -42,18 +46,22 @@ def otsu_threshold(img):
     input: img -> numpy array
     output: threshed -> numpy array
     """
-    gray_ori = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    _, threshed = cv2.threshold(
-        gray_ori, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-    return threshed
+    #gray_ori = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # _, threshed = cv2.threshold(
+    # gray_ori, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    grayscale = rgb2gray(img)
+    thresh = threshold_otsu(grayscale)
+    binary = grayscale > thresh
+
+    return binary
 
 
-def removeBackground(Folha, threshold_func):
+# def removeBackground(Folha, threshold_func):
     # apply threshold
-    threshed = threshold_func(Folha)
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (4, 4))
-    morphed = cv2.morphologyEx(threshed, cv2.MORPH_OPEN, kernel)  # dilation
-    return morphed
+    #threshed = threshold_func(Folha)
+    #kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (4, 4))
+    # morphed = cv2.morphologyEx(threshed, cv2.MORPH_OPEN, kernel)  # dilation
+    # return morphed
 
 
 @app.route('/')
@@ -64,9 +72,11 @@ def index():
         print(files)
         files = files[-1]
         path = os.path.join("uploads", files)
-        image2 = cv2.imread(path)
-        otsu_morphology = removeBackground(image2, otsu_threshold)
-        image3 = cv2.cvtColor(image2, cv2.COLOR_BGR2LAB)
+        #image2 = cv2.imread(path)
+        image2 = io.imread(path)
+        otsu_morphology = otsu_threshold(image2)
+        #image3 = cv2.cvtColor(image2, cv2.COLOR_BGR2LAB)
+        image3 = rgb2lab(image2)
         L = image3[:, :, 0].ravel()
         A = image3[:, :, 1].ravel()
         B = image3[:, :, 2].ravel()
@@ -81,11 +91,11 @@ def index():
 
         df = pd.DataFrame({"L": L, "A": A, "B": B, "x": xs,
                            "y": ys, "Otsu": otsu_morphology1})
-        df = df[df.Otsu != 255]
+        df = df[df.Otsu != True]
         kmeans = KMeans(n_clusters=2).fit(df[["A", "B", "x"]].values)
         df['predict'] = kmeans.predict(df[["A", "B", "x"]].values)
-        num1 = len(df[df['predict'] == 1])
-        num2 = len(df[df['predict'] == 0])
+        num1 = len(df[df['predict'] == True])
+        num2 = len(df[df['predict'] == False])
         num3 = round((num1/num2)*100, 3)
         if num3 > 100:
             num3 = round((100/num3)*100, 3)
